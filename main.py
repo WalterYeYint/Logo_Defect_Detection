@@ -1,93 +1,100 @@
+### USAGE
+### run in default
+# python main.py
+### To run with configs, enter the command below
+# python main.py --type "type of input file: 0 for image, 1 for video" --input "path to input folder" --template "path to template image" --threshold "threshold value"
+# E.g. python main.py --type 0 --input images --template templates/logo_template.jpg --threshold 0.7
+
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+import argparse
+import os
 
+ap = argparse.ArgumentParser()
+ap.add_argument("-t", "--type", type=int, default=0,
+	help="type of input file: 0 for image, 1 for video")
+ap.add_argument("-i", "--input", type=str, default="images",
+	help="path to input folder")
+ap.add_argument("-temp", "--template", type=str, default="templates/logo_template.jpg",
+	help="path to template image")
+ap.add_argument("-th", "--threshold", type=float, default=0.82,
+	help="threshold value")
+args = vars(ap.parse_args())
 
-# threshold = 0.7
-# template = cv2.imread('images/logo_template.jpg', 0)
-# cap = cv2.VideoCapture('1638172648254323.mp4')
-# while(cap.isOpened()):
-# 	ret, img = cap.read()
-# 	if ret == True:
-# 		img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# 		height, width= template.shape
+threshold = args["threshold"]
+template = cv2.imread(args["template"], 0)
+source = args["input"]
 
-# 		# Applying template matching; Minimum value is the point where the image matches best
-# 		res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
+if args["type"] == 0:
+	print("Press Q Key to quit")
+	for file in os.listdir(source):
+		imgDir = source + "/" + file
+		img = cv2.imread(imgDir)
+		img_cpy = img.copy()
+		img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+		height, width= template.shape
 
-# 		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-# 		# print(min_val, max_val, min_loc, max_loc)
+		# Applying template matching; Minimum value is the point where the image matches best
+		res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
 
-# 		top_left = max_loc
-# 		bottom_right = (top_left[0] + width, top_left[1] + height)
-# 		if max_val >= threshold:
-# 			cv2.rectangle(img, top_left, bottom_right, (0, 0, 255), 2)
+		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+		# print(min_val, max_val, min_loc, max_loc)
 
-# 		cv2.imshow("Gray image", img)
-# 		key = cv2.waitKey(10) 
-# 		if key == ord('q'):
-# 			break
-# cap.release()
-# cv2.destroyAllWindows()
+		top_left = max_loc
+		bottom_right = (top_left[0] + width, top_left[1] + height)
+		if max_val >= threshold:
+			print("No defects detected.")
+			cv2.rectangle(img, top_left, bottom_right, (0, 0, 255), 2)
+		else:
+			print("Defects detected.")
+		# print(top_left[0], bottom_right[0], top_left[1], bottom_right[1])
+		cropped_img = img[top_left[1]: bottom_right[1], top_left[0]: bottom_right[0], 0]
+		masked_img = cropped_img - template
 
+		# cv2.imshow("Template image", template)
+		cv2.imshow("Gray image", img)
+		# cv2.imshow("Cropped image", cropped_img)
+		cv2.imshow("Masked image", masked_img)
+		# cv2.imshow("Contour image", img_cpy)
+		key = cv2.waitKey()
+		# if the `q` key was pressed, break from the loop
+		if key == ord("q"):
+			print("Quitting...")
+			break
+	cv2.destroyAllWindows()
 
+elif args["type"] == 1:
+	defect_detected = True
+	print("Press Q Key to quit")
+	cap = cv2.VideoCapture(source)
+	while(cap.isOpened()):
+		ret, img = cap.read()
+		if ret == True:
+			img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+			height, width= template.shape
 
-# img = cv2.imread('images/vlcsnap-2021-11-29-19h52m00s909.jpg')
-img = cv2.imread('images/vlcsnap-2021-11-29-19h51m36s119.jpg')
+			# Applying template matching; Minimum value is the point where the image matches best
+			res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
 
-# img = cv2.imread('images/zoomed.jpg')
-# img = cv2.imread('images/gaussian-blurred.jpg')
-# img = cv2.imread('images/oil_paint.jpg')
-# img = cv2.imread('images/broken.jpg')
-# img = cv2.imread('images/rotated.jpg')
-# img = cv2.imread('images/position_shifted.jpg')
-# img = cv2.imread('images/rotated.jpg')
+			min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+			# print(min_val, max_val, min_loc, max_loc)
 
-img_cpy = img.copy()
-img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-template = cv2.imread('images/logo_template.jpg', 0)
-height, width= template.shape
-# print(height, width)
-threshold = 0.82
+			top_left = max_loc
+			bottom_right = (top_left[0] + width, top_left[1] + height)
+			if max_val >= threshold:
+				if defect_detected == True:
+					print("No defects detected.")
+					defect_detected = False
+				cv2.rectangle(img, top_left, bottom_right, (0, 0, 255), 2)
+			else:
+				if defect_detected == False:
+					print("Defects detected.")
+					defect_detected = True
+			cv2.imshow("Gray image", img)
+			key = cv2.waitKey(10) 
+			if key == ord('q'):
+				break
+	cap.release()
+	cv2.destroyAllWindows()
 
-# Crop out the Region of interest
-roi_x = 202
-roi_y = 595
-box_dim = []
-
-# res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
-# loc = np.where(res >= threshold)
-
-
-# for pt in zip(*loc[::-1]):
-# 	cv2.rectangle(img, pt, (pt[0] + width, pt[1] + height), (0,0,255), 2)
-
-
-# Applying template matching; Minimum value is the point where the image matches best
-res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED)
-
-min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-# print(min_val, max_val, min_loc, max_loc)
-
-top_left = max_loc
-bottom_right = (top_left[0] + width, top_left[1] + height)
-if max_val >= threshold:
-	cv2.rectangle(img, top_left, bottom_right, (0, 0, 255), 2)
-# print(top_left[0], bottom_right[0], top_left[1], bottom_right[1])
-cropped_img = img[top_left[1]: bottom_right[1], top_left[0]: bottom_right[0], 0]
-masked_img = cropped_img - template
-
-position_offset = (max_loc[0]-roi_x, max_loc[1]-roi_y)
-if position_offset[1] != 0:
-	print("Error detected: the logo is not in correct position.")
-else:
-	print("No errors detected.")
-print("Position offset: ", position_offset)
-
-# cv2.imshow("Template image", template)
-cv2.imshow("Gray image", img)
-cv2.imshow("Cropped image", cropped_img)
-cv2.imshow("Masked image", masked_img)
-cv2.imshow("Contour image", img_cpy)
-cv2.waitKey()
-cv2.destroyAllWindows()
