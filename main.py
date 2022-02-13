@@ -10,6 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import argparse
 import os
+import API_call
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-t", "--type", type=int, default=0,
@@ -25,6 +26,11 @@ args = vars(ap.parse_args())
 threshold = args["threshold"]
 template = cv2.imread(args["template"], 0)
 source = args["input"]
+
+url = "http://127.0.0.1:8000/detections/"
+detection_result = "0"
+
+serial_no = API_call.get_last_serial_no(url)
 
 if args["type"] == 0:
 	print("Press Q Key to quit")
@@ -45,12 +51,18 @@ if args["type"] == 0:
 		bottom_right = (top_left[0] + width, top_left[1] + height)
 		if max_val >= threshold:
 			print("No defects detected.")
+			detection_result = "OK"
 			cv2.rectangle(img, top_left, bottom_right, (0, 0, 255), 2)
 		else:
 			print("Defects detected.")
+			detection_result = "Defective"
 		# print(top_left[0], bottom_right[0], top_left[1], bottom_right[1])
 		cropped_img = img[top_left[1]: bottom_right[1], top_left[0]: bottom_right[0], 0]
 		masked_img = cropped_img - template
+
+		serial_no += 1
+		response = API_call.upload_to_server(img, serial_no, detection_result, url)
+		print(response)
 
 		# cv2.imshow("Template image", template)
 		cv2.imshow("Gray image", img)
@@ -63,6 +75,9 @@ if args["type"] == 0:
 			print("Quitting...")
 			break
 	cv2.destroyAllWindows()
+
+
+
 
 elif args["type"] == 1:
 	defect_detected = True
