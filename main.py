@@ -61,7 +61,7 @@ if args["type"] == 0:
 		masked_img = cropped_img - template
 
 		serial_no += 1
-		response = API_call.upload_to_server(img, serial_no, detection_result, url)
+		response = API_call.upload_to_server(masked_img, img, serial_no, detection_result, url)
 		print(response)
 
 		# cv2.imshow("Template image", template)
