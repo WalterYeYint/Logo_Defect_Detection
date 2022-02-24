@@ -32,9 +32,10 @@ source = args["input"]
 url = "http://127.0.0.1:8000/detections/"
 detection_result = "0"
 
+# serial_no = 0
 serial_no = API_call.get_last_serial_no(url)
 
-def process_image(img_dir, serial_no):
+def process_image(imgDir, serial_no):
 	img = cv2.imread(imgDir)
 	img_h, img_w, _ = img.shape
 	img_cpy = img.copy()
@@ -62,14 +63,14 @@ def process_image(img_dir, serial_no):
 	masked_img_cpy = cv2.resize(masked_img, (img_w, img_h), interpolation = cv2.INTER_AREA)
 
 	serial_no += 1
-	response = API_call.upload_to_server(masked_img_cpy, img, serial_no, detection_result, url)
+	response = API_call.upload_to_server(img_cpy, img, serial_no, detection_result, url)
 	print(response)
 
 	# cv2.imshow("Template image", template)
-	# cv2.imshow("Gray image", img)
+	# cv2.imshow("Output image", img)
 	# cv2.imshow("Cropped image", cropped_img)
 	# cv2.imshow("Masked image", masked_img)
-	# cv2.imshow("Contour image", img_cpy)
+	# cv2.imshow("Original image", img_cpy)
 	# key = cv2.waitKey()
 	return serial_no
 
